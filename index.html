@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Lab Programs</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:       #1e1e1e;
+    --sidebar:  #252526;
+    --titlebar: #323233;
+    --tab-bg:   #2d2d2d;
+    --tab-act:  #1e1e1e;
+    --border:   #3c3c3c;
+    --text:     #cccccc;
+    --muted:    #858585;
+    --accent:   #569cd6;
+    --green:    #6a9955;
+    --ln-col:   #858585;
+    --header-h: 56px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    height: var(--header-h);
+    background: var(--titlebar);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .window-dots {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot.red    { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green  { background: #28c840; }
+
+  .topbar-title {
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+    text-align: center;
+  }
+
+  .dl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: #fff;
+    background: #0e639c;
+    border: 1px solid #1177bb;
+    padding: 6px 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .dl-btn:hover { background: #1177bb; }
+  .dl-btn svg { flex-shrink: 0; }
+
+  /* ── Main layout ── */
+  .main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  /* ── Card (VS Code editor window) ── */
+  .program-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 28px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  .card-header {
+    background: var(--tab-bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    height: 36px;
+  }
+
+  .traffic-lights {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .traffic-lights .dot {
+    width: 10px; height: 10px;
+  }
+
+  .file-tab {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 0 12px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .file-tab.active {
+    color: var(--text);
+    background: var(--tab-act);
+    border-bottom-color: #569cd6;
+  }
+
+  .card-title {
+    font-size: 11px;
+    color: var(--muted);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--muted); }
+  .copy-btn.copied { color: #6a9955; border-color: #6a9955; }
+
+  /* ── Editor body: line numbers + code ── */
+  .editor-body {
+    display: flex;
+    overflow-x: auto;
+    background: var(--bg);
+  }
+
+  .line-nums {
+    padding: 16px 0;
+    min-width: 44px;
+    text-align: right;
+    color: var(--ln-col);
+    font-size: 13px;
+    line-height: 1.6;
+    user-select: none;
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+    padding-right: 12px;
+    padding-left: 8px;
+  }
+
+  .code-pre {
+    margin: 0;
+    padding: 16px 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre;
+    flex: 1;
+    overflow-x: visible;
+    background: transparent !important;
+  }
+
+  .code-pre code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  /* Override hljs background */
+  .hljs { background: transparent !important; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #424242; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+  @media (max-width: 600px) {
+    .topbar-title { display: none; }
+    .card-title { display: none; }
+    .code-pre { font-size: 11px; }
+    .line-nums { font-size: 11px; min-width: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="window-dots">
+    <span class="dot red"></span>
+    <span class="dot yellow"></span>
+    <span class="dot green"></span>
+  </div>
+  <span class="topbar-title">OS Lab — C Programs</span>
+  <a class="dl-btn" href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,UEsDBBQABgAIAAAAIQDfpNJsWgEAACAFAAATAAgCW0NvbnRlbnRfVHlwZXNdLnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0lMtuwjAQRfeV+g+Rt1Vi6KKqKgKLPpYtUukHGHsCVv2Sx7z+vhMCUVUBkQpsIiUz994zVsaD0dqabAkRtXcl6xc9loGTXmk3K9nX5C1/ZBkm4ZQw3kHJNoBsNLy9GUw2ATAjtcOSzVMKT5yjnIMVWPgAjiqVj1Ykeo0zHoT8FjPg973eA5feJXApT7UHGw5eoBILk7LXNX1uSCIYZNlz01hnlUyEYLQUiep86dSflHyXUJBy24NzHfCOGhg/mFBXjgfsdB90NFEryMYipndhqYuvfFRcebmwpCxO2xzg9FWlJbT62i1ELwGRztyaoq1Yod2e/ygHpo0BvDxF49sdDymR4BoAO+dOhBVMP69G8cu8E6Si3ImYGrg8RmvdCZFoA6F59s/m2NqciqTOcfQBaaPjP8ber2ytzmngADHp039dm0jWZ88H9W2gQB3I5tv7bfgDAAD//wMAUEsDBBQABgAIAAAAIQAekRq37wAAAE4CAAALAAgCX3JlbHMvLnJlbHMgogQCKKAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArJLBasMwDEDvg/2D0b1R2sEYo04vY9DbGNkHCFtJTBPb2GrX/v082NgCXelhR8vS05PQenOcRnXglF3wGpZVDYq9Cdb5XsNb+7x4AJWFvKUxeNZw4gyb5vZm/cojSSnKg4tZFYrPGgaR+IiYzcAT5SpE9uWnC2kiKc/UYySzo55xVdf3mH4zoJkx1dZqSFt7B6o9Rb6GHbrOGX4KZj+xlzMtkI/C3rJdxFTqk7gyjWop9SwabDAvJZyRYqwKGvC80ep6o7+nxYmFLAmhCYkv+3xmXBJa/ueK5hk/Nu8hWbRf4W8bnF1B8wEAAP//AwBQSwMEFAAGAAgAAAAhANZks1H0AAAAMQMAABwACAF3b3JkL19yZWxzL2RvY3VtZW50LnhtbC5yZWxzIKIEASigAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArJLLasMwEEX3hf6DmH0tO31QQuRsSiHb1v0ARR4/qCwJzfThv69ISevQYLrwcq6Yc8+ANtvPwYp3jNR7p6DIchDojK971yp4qR6v7kEQa1dr6x0qGJFgW15ebJ7Qak5L1PWBRKI4UtAxh7WUZDocNGU+oEsvjY+D5jTGVgZtXnWLcpXndzJOGVCeMMWuVhB39TWIagz4H7Zvmt7ggzdvAzo+UyE/cP+MzOk4SlgdW2QFkzBLRJDnRVZLitAfi2Myp1AsqsCjxanAYZ6rv12yntMu/rYfxu+wmHO4WdKh8Y4rvbcTj5/oKCFPPnr5BQAA//8DAFBLAwQUAAYACAAAACEAaFhYfRUwAAAaYwcAEQAAAHdvcmQvZG9jdW1lbnQueG1s7H3tThtJt+7/Le17qHFERF5DwAnkg2yzBQTeiZTJWMBob2lijRp3GTe4qz3d7ZDMaKRzG+f2zpWcquq2wdB2f7jbXVV+kGYCGLer1nrWsz6qatV//fd3d0i+UT9wPNZutF7uNghlPc922HW78dvl2fa7BglCi9nW0GO03fhBg8Z/H/7nf/zX3YHt9cYuZSHhj2DBwd2o124MwnB0sLMT9AbUtYKXrtPzvcDrhy97nrvj9ftOj+7ceb6982q3tSu/G/lejwYB/7wTi32zgkb8uN73bE+zfeuOv1k8cG+nN7D8kH6/f0Yr90P2d97vvHv6oFcFHsRn+Kr19FGvcz/qzY4Y1ZMH7RV6EB/VkyftF3tSwuTeFHvSq6dPelvsSa+fPuldsSc9gZP7FODeiDL+Yt/zXSvkP/rXO67l345H2/zBIyt0rpyhE/7gz9x9M3mM5bDbAiPi75o+wX1t537C2x3Xs+nwtT15itdujH12EL9/e/p+MfSD6P3xP5N3+FnmH73lY0wOcuY7Ph1yWXgsGDijqYW7RZ/GXxxMHvJt0SS+ucPJ392NWhnNZR49fYxEef/ALMOP5e8Oo5EvfmJrN4NGxCOm78gyhNnPnIzE5Si8/+BConkg3FZGApk84NWTB7zpORkhPXlGJE0+H/7OB88JaL7H7E8eE/xw7039bnS9HFr+7Xvj0f3TnOWe9une9u+EF87xrBh1Dy0hWG4wFwNrxCnB7R18umaeb10N+Yg4hgiHAZEaEP/nWiHC6BqHPFS48uwf4t8RuTvgoYZ93m7s7n78+Ob4zX5j8quPtG+Nh+HTVzoPfiUf0vHlPxfhjyH/qINv1rDd+JlaImZ53dgRr/nRnwR/TV5+tRe9EPx1Esz+bif+653pg6P/xd/PfEhrP3rKVfT/kyB+ZvZPuTuQ4dJBMLJ6XGojnwbU/0Ybhx3fu/Ytl7QOyC9cCs52J5I3ORqNhk5PsicZC/ET8bAweqSUg+95/VPf5x8Y/hjxh4rnXITcc8WymD+dN5Ph5prAIWeX280sozhldlVjeDHz+UJ5ZeNLqEiImyua8hnzKe2Kd0Q/HI1DL/6D+PdWP6R+/P3QEUb6am/6w/lY2IjF3zSDT//MY6GYpBX0HE4Rl45LA/KF3pFzz7WYePfgiAUJr+SW2Rx4r24AQlvPHNYbjm1Kng/DD2kACkZ0OJyH49WOOwhtx3s5yDTiZMyvdrzPrx+JF/YB+6hw3GPmcBOBgcBAVmkgwY9gRyMjubOcECYCE6lWb8nZxWzOAE3qq0mHhUslgKslEVFlWiJTXO1gkVJqGBH8DaWZ4qP4VxpVKBTOjRz7jzDTeBXgtixRgfLi1kXYh4ibwUkwkkLybmsU3C65DLLi4BakZAwpQZMGuRenT1JJBC6mRJmL0jHZRbJvkhGhCmCSNotE3QrHiSPfYWFfF9Y81CakbUy2SPV8Gu2P6lvOkNpfWQPRbk55qk0I/0CbBmmTDgOKsHfVgm+3EfSaZUcIehH0Iuhdt6D3ZOAMbRKHvgh1QQOggfWjgWT8TLjh08cDsiHS4C2dFi+vaajTIv/mCzBvTrGpzbwoMpikTVFkgEINUiiyXdPCXHEgZvPLb58/w5Eap9sZhSKFQQrzdKCNjuWL7lEoZYAHwAMoZczgZ0oOqGWglgHqzUu9qGWYpE2fhmOfkV3YqH5aPcxgiietN2eniUqbfaUcpaUoaiK0KuC1qGVbnlnM4CmxQ1txJfNXesEc3V+VBcEFXeXy4qsTN457NWkcdznwuWCpndA5rvPrxaf/JdEfBJWTSVnaFlp8QDTy+9yAqEppedX1rLQWT6UMZ/nOZqUMYyXNZoBH9fE4CiU5AZFApEIMyZZr3FXGOJKzA4FSsrNDzumfY8fnPp+DY7k6SSky4wIbhX6+9hiwr9XYVzKQvnmO/S8FkBPR/x9pA8ne4rjgOPpj1hOBc91uqLQ2yyaCxfKv69ZP9ScqwGEJYq9+MwjEnpUNiizzlY+IIiHH6kTk2KS95Hm3MqWUxalU6+bV4m09vJcSvv9D9d1nQL1VUu/qjX3pjRMmRNKHjajsTjbqZ57hMjsTqvSSAfHHjHHblPs9Noceu37h2CvYmwDKyUM58Xq02LoL1dSS/1S/vwNiz2oRy3ZkLwUQSzZaRy0EtRCIfXkuUKMWEi+iqloMqZ0sI/EEv9fMl6+7iJ5gurOYULuMqYB8ahbMoVxu/8UKewMSDigRH0rGAbWJw6JfRFl+4vohDLxuAxfbI1Qow6tp3m2y+6i8C+ncS0f2jX4NAfFPbjaR66lFbEgC1dKHWomgbJA82w6lBtbYfG65ow9Zk6919TPdLVlYX/K4a4l58h+q7IXbIpti51naMCovH/xLgc0DObG78lIwKhtq+SMsGNWgj6EVhOeU2dSndse6psecTm/lu5CiFoQyUtRF0kGKOh0AUlTVXBBSVKSoT+10kqLeeA6rmzM2kZtOBxCnoQjkEchDH1l682BffB2KwU7IdLFnEUpHDGv36LT18e1eRknFf1yBpNLFcBX9/ySoFIvFP0VAshM35nl9QD46YlM76QycoRd4owH1A8I9+tWQurnhG2kqF6afamoJ3Bbr83U5oC7/K9dhnv+zaLwk3i07MCW+0gvCJ79eRtWJwlNqsAIFz5bqfKHHHIs1HNJjboV6xsCeYc8a23PRhk16zA4WDYteOw9NXWs04CiDTcOmYdNG2PSYOTzwhkHDoGHQxqTRBbpS6jE5GDQM+gEeshxGA0KqQYhBSU3uQ5U6GwefmgsOhYXAQsrqQqCHFnsDbxSETu82Z3MDPWa3X6BjAjgNcSEQAoTMti83lP6pFebsAqaxHrM0XtN1VXXgDE2MxQ5fFDgGAH5eMw9e4GCCIfxdqFWyHlNbH7/UeLDPk2zYoq0x98tO3NUYHkszj4WUEw5riob8xw0AhjWLXoAQIGQhQrJdn6ZpAHsf+qxPwFfwPjw9NMrGs2eUUIkAU6+NL+dfqDKasuLbJptcmS/yN1fSQ5sF7/bTY3JG7kwocAuhHvPKHTMYsTsBhSLEEykuCAgBQlIjTkOdgthgeGc5ZnryqLe12HWL9QIYeQVGjgVuLHCrgt/HC9wDKyCUhaLNsbwDSdAg1rqx1g3fZaDvAkKAEKQwxqYw2Q8QwXmrNbEuvDe4eb25OW1qeubM5nqcLPrSrnnJrBc1dbV5zfYONEnrBdkg+3CycLKpYAFCgJDUMCzLUV34BrUmBvKHaWcw7TTs65mGBENKR0aG7K9g17BrBHVASOXMj10dqFGpit+kXR19hznBgNpoYICkBa4LwQ0Qsq4IwcKhhi7NC7BwqM2ksHCoNSixcAgnCye7yMma646wc1Jr/YGbwc33cAA3m8fNPg7mwsgzGDkQAoSkugGfhmOfkS+/ff4MSgFgpq4GvYEBBvgXIGQZhGTpNqnnYoRrOczIuj0aycKs08za8EayTqZ5oZ8jzNo8szbUpEfhwKeWjSuBzd+9Gzq2kfyNK5CTZjT5JdySuW4JCAFCojEMrSA8p8wWvRk71jU95k79Vr4LGz2TpqanB3cYOsToM6npivQW2d0ie1iXBl3DoQMhyyGEf3GtEGMvNzLRvc29p2r3AyrF+uvx+TD8QPahSq1m1WxiPQ/uNtW24y9DTVtkyubmlOtxWsNMeu7KnLmFnBkUnYGisSMTKElBCRAChKTyCCorqKxAj+roEZUVVFbgbo11t2uwrbLH/x9SI+08qq8Yqr+13SsJV6rQrLpb8vTxFhEtWeKWrVtk85uXjk49Nzj960Xu9MuIrUIOC0ehb+Ym/MMX4BydtIWSe3UCFtI0I3ZHyR0oSUEJEAKEpPIISu4ouUOP6ugRJXeU3OFujXW3a1Byv/EcZqSVmxomodYOH6pMrR3lL/jRDH4U5S+gJAUlQAgQksojcY/p3fxeB8AwABhZeknHqkzQ++wr0Hs2AUaAWFKqo4vwx5BOBvMzzzu5CF/Hw8wh8flibDdOrKFz5d+Lb+Y3veD+x2XM5OHnz8yptR895Sr6/0lQCN8d3xP7McjeATm22C31/9//+b8BORpee74TDlyt0e8wW7xC+3w4rd3Furx0XBqQL/SOnHuuxcQjqRWER4FjJSn68Z+XpeHJqJ5+diHtPnNYbzi2qSgaz6gyS7Jb4biC0Ha8l4NMQ7rPUysc0PPrRwIyEuslCGsluC0csENBdSqoSM/86sZYpNF9haOZ3WQH9NaI3sMMS3HQRa1Un6lJ/wq55Bfre84uxqsWWWu3+zv/b4swSm3xXfRT2qBXGfVZw6HXyzSg+sR4Lznrm+UMo297njsa0jCSq1oyDaw+vaB/jinr5T3FVOGohJwQT2tBsqMt4qsF6bzLlxUOZYvcbBH++T0aBIIGxgxpovqwlnqSGx6hK8V1BQWpbkx5PUOdUfrI5x6tr477UKf60DhlHNgkHFDyZexe8W+9PulEju2ANLJsqoEhwhCzwi3oWQx2mGSHG3Zji8jGDCMYHcITKKhiVlwh6XGVld0cocLRqpNll3pgbZ0lJo+GjSC0OUNpNrEGpzyfY2lOeRWJAttkPQRUkziULqqPWkBZ7929yMCgoPptKK8LQIH4fjwKFaa+5tVjlaNhslytjJ7mQF9U05knKun8d97Y79Golg7SAmmVaAwBiulzOOu+mO6jmI5QDgpCKAdaRChXMJT7xfrO/wt957tsekit3mCy949gj4QWBCb0lr8LU4XoxyqbcRLDKtvCoWCVTQOexCqb8ipCNI5ovPzRsDNP+Vh8EnNv2OSggaNJuWTXJJmu5Aa5q07uiu1brPds802UptxEsbevVux902wqwwroMqGD7WP5yYzI7n75KUt7iHXdCvf7TRchifq0hK1wqqsIClLdhvK6AFRslPTrWD/NDX2xfirbO1mh4zG5Dncq1k87OGKuHn8N+UPOKbOpT+2OdU2PfWrdynfhmOXaVQyxAJxXYlgAXjgULABrEKliAVh5FSGdQDpR/miwAGx2cIIFYEPIHQvAWAAuMBjE3hrYPhaAzYjs7heAVeIjtdrsF7hlucLBYGEcdJ2TrrEwrrqKoCDVbSivC0AlS8l4BwvjuaEvFsaPxE1C1tWQkvOZPjHgLdV5S+xjwHniPCLDcnJeialY0sJyMngyD0+ioGVaQSu6/RCclDgU1G3U5yQoSHWngeA6r8gQXOeVGPZqIrjWnSexVySXwLBXJOtgYPsa2D4hjOKilXlDEYvo3N5x/j4fsKTYtpViRuxa0cbgUPxQ3W9AQao7dtuDjlTXEQ7JKa8ibC1aZjzYWpQ8GsbzCWW0NAf6rryp4EApuYVH0xYguoiPYR+WETSPBiRzRotFLeMkhkWthUPBopYWjI7sSgMlYe0xl8iw9ph1MKBoLawf9RVD6isbNmlsYZ10/lBwHNucmGSVEFaOcxpfQ9S0DAEygmsE1wUGg+BaC+tHcG1EcJ2s4jjiVomjsMVu/mCQiYDCKwjg1jgTSRYbT0/Ekjt2KGoAb3Q+U11JUJD6VjSKu5m3yXYLXl0DhaV5UGw1Uj6GxlajkiSGrUYLh4KtRlowOrYaaaAkQpz+Zs9zR0Ma4sDzvKF0SZt7MbCOFoAG72ihpoc5GmgncShIXDVBchpksKMAOwoKDAYBhyb2j5BDE0XJdCfqsnvTjQgIjZ7mD0UuigPbumAbNKSNqrBCpa3irnxq3UJj2mgMGyo0URUUpYWioCbV1QQF6WBHM1q6q7VoyJPiLKNZSc45iYt/EoExkk8toIzEU5MQK83KcfRp/njQtzF5NKwTMbYymppjAhs28ccsIKFH4g0vjsfIT42taSmmSVo4AqQMlQ35Q84ps6lP7Y51TY9F3UW+q2SSq9I4AqtPL+ifY8p6VB0q+73njVko7nB4AH0gXxMnLpXXbEJfhgRd2B2C3SEFBoPcWBP7R3asiaIImW4Naaq1KVW1JhJx2Ih7ibRCNxCdCdEyAgGqdUG1aK8J7emqvfuzZxMdYkeUThrEbgBNFAU96aGnaHsh1KWFusB+GqgJSlJeSf+oVCS/GzhDqs5qv1zuEduhRuS55Y4+yP9NF+6ibVIIl1WHOBSkOgcpxEAq7ceM6KfN6QcLTspjGEtNyqsImzCXGQ82YSaPhl0O1NlfNgf6wY8gpC5xAuIwYhGxNY4EoRXSn37CjdDgLnDX6rjrQtjeZF/qQbTXChZohAWiUfKc0aJRsnESQ6PkhUNBo2QtGB1RlRFRVbKCFbyRTNEzSSDxxKHgVjItSFwl9Kp3O/Lz6/ADajxaQBm7JZRXER0Gs44bWlJQS1iLM9BtI/N64NbThoK1uPq1lGktjpExe7gch0ANgRpUtLyKfBqOfYbzaAqp6nDWbLiIPO/Wtfxb6Rz42xw7lguzXC6GP/7tHVu92+jJk789lRKJ/jJ6/FOFfvz45vjNfpJCZ1+pQaGPJWsFPcfhTkvM13WY5/98xAJHvHsgvkl8pReET35dWOO6WYSWAuyI6enCM9v7CyTdblw6Lg3IF3pHzj3XYlNJP31lGRZKlNyDUV1lfvjdwVio3Bt68lHi6zEvdXxPxMtk/4CckBPPpoSLlJx9OvuViO5n5JyOhtzBuJSFjxisxHGm+7Tcnkx52MUTzieegPbCzlTwadOWM7m+EJ9wx33oq3g0A/79/ru92KOOrn+xxBNDb8R//+btO/ks53rAxfT6VUvO1wtDz+U/7skPil3yq1fR06hli1m33skf+54nhfA2evV6HMYykR/GoSjmFutX/E00vWhehhFLAQ3nYIG8Acgzh/WGY27fYvfCI1NOz1vLHk0Q2o73cpBpHPf5asmjSOYasWgAvqkWjWB5daTusDD37r6SB3boWg7LWddbiWxekL+LdTEAMEugA/4lwNnneqfBFhnxeDQosKelbLCKcfwhNZm3+fRqxCY3dAK1NaI2L0RXzreF1nTKHoSKhN84ZRyOhI3dK/6P14/J50AcU4BNwaYWpTQ9i8GkEkxqw25sRT0kImOCJcGS4J1K8U4yJI6cE8wJ5gTHVNAxSTuCEdVlRBB7TdyVpfa3mnpKEHKnf10vSyXL6XdJDt0t8ueYjunvUQzLf+z7nuhQRHa3oqtxEg7SAsqrgzIkX5fk8xII8om5UqgnnwgHlPi0T31xNJNETIyKV+12JTbibCrhofOeS12NiJ76W8hmIpuoRYUIXCCiZBE1my9AbXVRG+omWkQND0sktbOIMmligZ4RZY9ASUbtooBWE6NC6lVKvdCN4AjeF0MWwft82SB4TxORCN6jnZmoUMR/vXKnE3/JHZremNn3+w6hk5p1MnU+s9eay2UKBSgl/33mK5HeQ0oBhGuGsPhy+mQzWnQT96sWuBq7bOAiBVU8LugKG4bd1my34msSErTuQ4LJF/SjgH6K3vcJXZSri38eX0IIJaxYCZB+jdLnId6M/BPiiKqXeTZ/kr4qyzCQkCAhifb6yXw6Ps4yoyPoSQE9ia8ocZTaajZ5+ojs8X4kyB6Ts8fZXAVmXLMZi4bTyOdVolO55x1kCjLNRKYwXAUMd3JMZTP6pklaL8hGHLpCRbWrCNWf2lWghi9Tt6FQswmeqBWk4Ih6xA+p1wj6vKy88roxThUWugGl7CGwMxnK1quHZCjfn6F8AmiwyWrZpD/ZEXcb7Yi7ndkRd4vDYDXrB4yvB+MnazG+bTiqEd7iHFCNxoRcoR7RQ+o1AR5eQ32voUSecOmF1rBeNcxBsbxo50zW/w7Ihv2VNdDlPE1oaE5TL+1O7xiECqpVwaObA7MIWEFZXsUTzS9RTHiuCZ2+3t2LruTKIIX4jxOlEE9wX74jnuH++5QZrvByvLusF5/NSuSCv+kRAITDmnxGj4/fYWNvHESfr+dVaRkYJz8WBeF04psB30Q3Az4KAmZ08QBbS31kfPvg5/PfFl8+aJKXUec2zwxIqn+wd4vacVR8yZ0Ks6/q6jw15ibu3oOlw9JjPKxbrQ0IKQchRfouLV0XVINB+w6zefxkpHcouYipxqQEVkOeIP3e3ZK9dNgL8jcIDgS32AWSqPESf3iGwxh6Mpk0CgMtPlmju90Kav5qKHLklb2CoLJliu1F4G/wdyp/T7ekGWr2ZZ9KU9voWxX01YMeV61HuSmUQZVazUo2g4XLhctNdbkybeqTzUypBWxcoVl1I2rmj4Gtw9az2rr4cmWJBBavncUji4aZZzdzQ2173WpnoGiNZgWGBkNnY+j8e5iBlPVDClAClKSjJD55goAPsQJsW0vbLnCkCWBYM6IHQoCQhQjJsnNCz41vruUwI7e6YukGZp1m1nKJVlwpKru6bUXX4Jq7NbKyJgtql3mxRRJEgAgQCFnaVeT1C4aEiJX0lFJjakZGvo1TxnmCsLF7xf/x+nF4IxvEgufAc+C5ZLsJehYDzelDcxt2Y4s8t9zRh/huRLAb2C2F3YAQIAT+D3G+kXG+LF8izAfNgeYQ5s9TmMZhvuQ3kBvIDVE+ELK0+zO4G0Z191WrMb/fpSfoTi4Biso//Ed58HL6k7xvi0fGWAEGI8BnACFImQr7E1SGtJpUXBniTyM+7VOfsh4lUTyA8hC4LhvX9dEyzqhNkNCj/nqUfYlk8gN1ajWrZvMFnC6cbqrTxboMcgw9JvVgXcZQT2R8FRURhEaz6iJtRwSRFkEAIUBIaoyJwg4KO9CjWnqUhZ1o5Rr61GpWuBAAfjeb3xVf0YYVGLhGs+pyJ7udNjMtS27JUG19yFCDNOYqPD7XnR3yiTmhYw2dvyih7ij8Ebti0DpoPROt48YHsLraSF07Vn9E68JCZeUD/A5+z4Uj9I8FSlJQAoQAIak8grI7yu7Qo1p6xH5KVN3hdo12u+JL9nj2xszGWVDAJgNsgBAgJBOxTGP6mygkvFmLhfybZtPIoAIhBSw/q+XLsKJPNqMF/ZsuaRt7nyz2wSPzU2dWXbA0WPoeD+ksHcVpUfLXQvIH6OSDjtzaIfz7pJ9UswkQAUT5QHTlU+sWsAFsssMG2w6AlmxoAVKAlBSkACFASCYucfqG3nO8+ZPMAbNMDmVr2LfJkaXJja+99braeBsFLZg+gj8gJBtChlYQnlNmU5/aHeuaHouylHxXBrexs0POnOGQWOzhGRrSd/wgJJu3lI4CEojfGOpbPp//1hTF4DVyMEPv2umhcSX4I3twiR1R2BEF619X6xdfj3dFbbeAIqAoL4rEl6HOYt2KFDeoUcD681s/9kwAOgWgg9VwICY7YoAWoCUFLUAIEJKZT0TyOwMYpC2api1tUbiA7cP2c0WfsH0TbH9dr+DqO8z+fP6biao28xIusR69FS+u4X4geKs0ZgNCgJDM8YzRdxWsVUQjTq+aqkc0p0BzCmVm1UUMBg+b3cOafG2EoQ5W+lJ0goC5FzB3k0MwCWAzLR5mDjPPaubYTwCkpCAFCAFCMnFJ3nDBkEWoke+wsG9kJGHkGlTja16gajIxdvb0kjhTkHhAGlgvhCfK6In6k0Odt9GhztvZQ523zSZ2SgFL2bCEyAaRjSaTamzYpLEVr4PfduEwQXIZSA4lIKAkBSVACBCSyiMIkhAk6RAkGVv+ufRCa2giEOdwjugIR87kOu4B2bC/Mh77Gqpb05eskaogxMgQYvg0HPusyJW4D4Bx+np3b89YYFwtAw89kPBPhnxk7/1+rIEHeD9pvTk73U/CxOyfS0zEv0rERKzufYmiWN/77+fp22G2eIX2+Udt7y/AQLtx6bg0IF/oHTn3XItNpfz0lfJYIJbKg1FFGLo6CcrTWcf3RLD42D9Ph5KgnkpGd/j2gJyQE8+mcpHgTDaDPXPCeeNaoYhWguoHM1kd01UE07yqf+aw3nDMNS8Wgx4pPG+guPxogtB2vJeDTOOYF84tP4rn149EAdyVLWNYuzpSz3KVxOIy1PIm51oOW6qysvwQMjU4BfxqgV/ljocd1+tzkkWzdOmmBMF06hXMITwxPHH9Ui974WZ5uyhhiWX5QdTsshun4gQfYWP3iv/j9YlLXc//Qa6GXu82yLg9EjiuFcdBz2LrDuMNu7FFnlvuqP4MvO5AKNOqBxz+MhIWAbdkyGVPrRuAtiy9HuAgEOioEegEzl80eBrnfGUIdKpmzeQ0SSyXyDMVtTPpcq14qsoi5UETyCZRNvL0Te2yUbPwBdAky6XZfFH1llJkdOVmdIpE2jXD+TDTwRtEKKUzBgq5s1JHfqMkXz4u5PLP79EgoCjiaoFhuHy1irh1L9rCZB+ZbOkSFkUHQZIK1HDrBhtquMr7B8Q4T2u49yEO6rfVEybqt0WSR9Rv58tGkfptzd4X9ds8ckH9VhNffZ/MqRFko3yL8i2kviqpKxERWsOh16vZ7FFdOOzKqxmvIQnUWeohI+Soiz0kctT5skGOOl84AE3xHLXiFDR5YH9rGZOtOHNFqirudttuycbmCkRtKkiD+8cM/WwRui0hZ2TvdUj9cGeHnH06v7jk/7+ErKuU9dAKwnPKbOpTW/SYPPapdSvfhbSlEDUgbZkvG6Qt84UD0MgMBb16qnWtKaR+E/HXDU4xLZCWAoK5aTZrNlaYatWmeuj0yWZ0zOimS0TzwrYiW0PrX7UG+B6BT4uaWeljgCmIOtANFvAqZmLUHCdYm/qjbfiiSCgwvoqN7x5ybWAOmFsN5kQZFFKuWMpYvYKAIWAIOG8BDuuvs1JPjYCe/AEOhla/ZafxlW2Lr/ulbHL0+fOvJ0eXn379QuRLOCFaAMyGgrXRiQ4OL3tl5/JDCS+cv2jN4lBACsci74QYznzr2qXs8a1hK5cEqDL+63uqLFvI2PFTJBjFjp/5ssGOn/nCAWiw4yeB1JHMJQ6i7mSudlvtbNg1q0CBYLRuGSQz+dewocCVbmpGAE3S2sKynfx8NNt47OvKV3GfpDqKynGGnVHK0lGXtMUpwvzdmkoXjyJFxy9HX0OUoVdATcl4pMOAqt85DAmAbB2G+Hde/MtUiH/hdsVH179JVEb82DErhQG3Kv9azLsat4odOBULGDtwaoG1T8Oxz8gu+KN+/jg6bX18u5cky9lXpCzjX61Wlv6Zx0IxSSvoOc7lgLr8r1yHef7PRyxwxLsH4pvEV3pB+OTX8uFXsfjy66kinEK282T7SIxpsp19pT4OqFK2VydBYRln4BnVhi5IrON7Igkm7w7ICTnxbErE3o1jGoTkzJndwAMUpalCK9zkRcozh/WGYw4QsUFjBhh3JaRpaswxCG3HeznINLvsKaAacxPdAGDPsOcYD4WTNCBkbRjfpn0uUPLpyxlp7U6+gBAgBBwChCyBkCw7w/MuUKpBma7lsJJXHdWYWKZNtzDr9SZ+/lXJoQ81TKD0zoIKq7KCtXlFlFj2uQ41poXMHuScQs5ACBCS6r7zsr4hYXsluxXVmJqR2Uh8gTobu1f8H69PXOp6/o+o1WBwQDLtTQbdge7Wk+6quNYZbFcd291fQZ0XsJrM0MzU+hBeCF4ogxcSNbOoYy3MW6dpZempC/Nee/POa9TIqRFl1jCpOKcOnL9o8DSlznjeF3S39nQn9g9X0/tNDTsp+4Cgyuqspk8d9LhqPVbTUw/JxaoVCWPUX4eigWFeLaLurPjMTK87G12eMpJ8sjWSQL5WUMJCmgbka0AIELIYIShgIlzRY1JPNgWNottRKDYEgepAdUjM5ioMG4JUm6GhxzTgheCFMnghsXomghdj9wOZad3YDwTrRoyJdNrM/UD32TT2AoHqslEd9gJhLxD0qJYejd4LZGRigb1A2AuEkrM2MzO95GxyZQpbgRJnNPkl0jVz0zUgBAhZjBCz2/tVcRecGjPDMpJe3rqqq/CgtSq1hhALDjTdgaIijoo49KiWHlERR0UcxqiGDrNUxLUseCdP929k01PYGlEnR2Fcp1l1eQy33fpgdL5truZ49J3hKmYk3QXFLKQZj0ULTGBdAwgphBD+tbNDjk8vLsnZp0vgBXiJxjC0gvCcMpv61O5Y1/TYp9atfBcKfGaFEyjwocCHAp/yioQxajUrUcvDraEIp1LYOf4yOGa6okH4yf6+VpHTdgsbImD6MH1u+hfOX3StbP/TlzMYP4w/BSdACBCSyT1MS2o3UUXmBv3skdCrrcSbZtNELR4ioQdtpxn1hLZlZN8nm1Hv+JsueX4dfmgb3dhsjYrq3egwsPxffHulULHBjtnkVA7EDmLPReziC3ZuTslmwuCo24AFwAJrumZzA+uH9We3fmy+BlqyoQVIAVJSkAKEACGZuESUFPPGnIlHCxGTqq/zn9LmquMZ0TbZbqHeBsbLyngGZ9louoYlLoWXuNqobulneShiwbFmd6xo/aBj64douQrkrKHytrEDCM1N4VNN9qlgZ33ZuQ16Bj2Dnk2lZ6zEAinpSAFKgJIUlAAhQEgqj+SNIg1Zp8dV53pNqvGVbYuvaQ9IcvT5868nR5effv1C5Cu48hyUVw3lgdLqntpmo+N7PRoEXw3VnbmnFo3V2LGooEJlOqnszLeuXcpCM7WG+KdSGZsT//TR/9qgE4Hof22CHtH/Gu2yYIwrnxX6X1crY3OCJtTKTbR/M2vlhrqgzoZtJAiNrbeYqa9kH/E1bGwh9tNejaRJWlvYX6nf/krUPhHGZwzji7Sn0MQMcFgbdKys/XVJuy37ahiqSqM3YHw5+hpijxX8bA4/S4cBRc0MNTMtamYbNsowBsQY3EMZW4ZBcI/gXolaS1QkQ1sWFMkQvJsYvONsKVCSghIgBAhJ5RGfhmOfkV14HaBlGoRkcC577/dj0T/W++wrUu9Hp62Pb/eM0PtVYe1nsanF5gMx1kNNU7HNl0u7cem4NCBf6B0591yLTeXy9JUHArg6CZZhkwfDKf68ue6h43uiTEjeHzyu1qTS2FKjOTwhJ55N5RmY//H8ICRnzux5MJPcU0WOJK/MnzmsNxxzqYtTDo/UvXzFIO9ogtB2vJeDTOPInuHnHYW4aRe4qxR365a6qCz1LMcN86705TU513JYyYtXeYdg8mkTpY1ebPuq4sRrXgCw43r9TrJ4Klgyyy2Ysg8J5h0AvDG88TrRYV6LX7m7rmQLTd5B1BwvNE4ZRx5hY/eK/+P1iUtdz/8Rte8ODojJ2/FgQEuCJ+hZbN3tZ8NubJHnljuqv+5Qd+h3CK6ojStE7lHRlQvawdDgVvhwWYj5yor5AucvGjwN+cw+gqG6AYllo2pap+VFSdk7FMsRUTXtyMyQTTUtvnRz/ytrm2UEaER/qrySQZ45TwgryTMVCfNrhrPRe82VjlIg9TqkjuRKE6J+XFAfRRcLUBTTYTwIcrIGOXnVVfpYat8uAK6ojStE/UXQtgK19LpRiFp6bSjMCz6Ee3OlsLpa+n20hzp65cYztILwnDKb+tTuWNf02KfWrXwXKuyFmQcV9vmyUaTCXnNQgAp7Hrmgwq6JJ79PPtWI/VFgR4EdUl+Z1FU5wFNFE7a8Y0Dh47BbVf8xlIBASFkJCbnqYhEhV50vG+Sq84UD0BTPVStORZMH9reWcdmKM1ikrF3uEbZbHxSJ3FSQBveP5jbbRBYPqT8Nmnd2yP/8en5xSc4+XUIJNSkBmctiESFzmS8bZC7zhQPQGH6luurErkyd/E401/xkf1eU3nkaAowCoxyjF85fFCAFSJEcKkIN09zkJgrDb3ByeoHUFBDMTbNZr2TQVrVmk5UevU82o7PPN10iulu3FTmkoWQW3Y22ssn/xZ2hYrEhLIJVq2PV4guAXCit9tR+Ea0DruqXPm4A07phijXfOjUA6dcifUi9RsyL7CyvY0zcH7W2jvOntFFVu3tMVIORENXvuvMaUelAwAEU8dGKFnXayD7iYSDJqJupsMtWfLCwSUVacipimV2yjcp8JAmQVN0kBdN8ZJpt2GYkCthmnbaJGlld0ofka5E8pF4T3vN6upVXJdFHMTxsfGXb4uv+6BY5+vz515Ojy0+/fiHyJTRU1MmKDLWSRidq8Pm1dnmosIFKASkci/wOYjjzrWuXsrBuSYCj47+ug6P7OHS7UERytz9kg0O3OYUD0ODQba3EjjQ26yDqTmNrJ4rOhl2zChSIhuuWQbIlfw0bWwg/kkmuSVpbWJiSn4++2/U62iI7WUsHATbhKctVXdKO9srWLh5FSqJfjr6GqM7Xzlt0GFBkCdkwm/b5lV81giB5XpDMVAiS4X7FR9e/tVamBdhnLIUB9yr/Wsx71e4VW6ZqkTykXhPefRqOfUZ2wTjVauAwP7EsluXRaevj270Vy9I/81goJmkFPce5HFCX/5XrMM//+YgFjnj3QHyT+EovCJ/8Wj78KhZffj1BjIqIcZFlTyX0UATRYK9OgsKDlnZUwvOEVXZ8T+SBpLV7QM5Ozi4KkuHuUevV2fuMIov/uE7ktRuXjksD8oXekXPPtdgUeU9fWUZPiVJ6MKq86nrmsN5wbFO5lWFGV3e504XlRxOEtuO9HGQax7ykYelRJHv4p03gTAIz0JiMxqFzBTiuKxzLTbAg9WWknmWD5uIq/PJ84FoOW6oIXpFsXpBHN70ZAUqH2eLDnesBH8/bd+/e6cMQYj2c45Xlr8mvHNPLFWgrEuCHDDv3arCzSKs+/XNMg/D3/d2uGGf0ywG1bPjjaq1taAXhOWU29andsa7psU+tW/muFDvMa4SlG1nohdbwj4DS5c7cVAXrpzv8gd0Vid48qc+47b03e6+0ctt5qWLl/rqEnSDLD0LFILhxyjhKCRu7V/wfrz/x08EBabyIHHXtfiDoWaxm3SULb7OxYTe2ossP2As4AziD9ZE6WF9/1neYEzrWUKZhZOQF/CePRcQPo4JRKeuN1bSp+1hA2BNsCOEAmAvhgBbUFYUD4YBO0j8SiH9Zjx7IszYwKlWNqmqb4ZIu56qN6ixKybWYUvq/mCob2f+FQTzJ4pHtT8C4dTEukjAtIpmH+dZkbRl8kgTqLuK3+tjkH4i+FtFD6jUBPotTQMKinpdAwrJANkhYFonH1IRlZk/OfuvVe62IWImtG4pv4WumX3FYtb+yroKaEym5+rs93aC77hwn86XJl5RNG7JZaEZd5Je1sTzyy3pED6nXBPi8FLxyh45V5nmrzJciGCQXPBgk4mw/2RSNDl5w97phl9GJzfRoFWVccP16cf20NVR+Fagj7VULrkBEiAZFqbA3yeyXbMETCXHJxklpplD8QwT2O5NuSq0DcnFxeZZuETHIE7Q2+4oqWlPUIo7f7p4cvXlkEY9++UC2s69I2ca/MkG2pZjGA3koM1hhTM9K7Dmk6hzL6Kul6txEJ6R0WoQ9w56NsuflO5PBoGHQMGg15jh0XCcMYNAw6OIGDamuM00m19CWb5uoKqks3YxR1YllujIYZr3WZi3WFAp2mNTECpbbH6TqrLZIzxtzvYktyjByGHkmI89r4YY4eJ/+aSQHpO691DFo2d/tbpFvTuCE1BadcTnD/b37DzgOHJeN48T25C0ity3BOa4GOJAqzDHJHNc03Chht6uqUzOyTLK43y/8B5gOTJdsOcu3XAHRrZLoZlpzg9gqJzZIFe4C7mLKPwiMtQyM57dEhwsB2YHsEBubFRtHrerBbZVzG6QKjwGPMaUghMdahsfJ1wPAfYDoUomOa4Xk7sypiXUYue2uwj6h0GP9eiyppylUucpZyVarcLdwt6nuFtUopBZ6TOpBNcpQX7S2e7IROyg0qy4SdUQOGSKHf4CSylECqcL2kmzvbuAMKdmMjjtGGToSPkAnC3QmZ4L4B5A2+fTl8o9fjv53i//Kpt/5L7Zb8P7gdRhnfcaJBRAsgECP6ugRCyBYAIHLNdrlypi4TzYnLRZg6hrNqkva3NXC3GHuecx9kgYbauq2E4RrFKMtez+nqmpc9tZPrbQYXzBqqEVicRfBEhZ3Ccq7kGpBqepiZBmDz76xVd41Cz5lgZA/GikoWCAvC4gvV67Eggv0iqQQR8HW89v6ZJuFodZuZtIEU4ep5zN17I0FYrIjBmgBWrKhBUipHimQKuxvnv2Jol0cwrfJdgsVH0AnK3TE15VPrdsPZGeHBFafhj9Ib0B7t4AQIATvD+8P+1Pc/qILlJptUbFHTQioyYYaua3J2IqvsduaZJjfhZnDzLOZ+eTsQIQbbvA4SAvsZMSOPMffbAIwAEw6YJAFVo8SSBW2l2R7mUJddGHXaGpmtkq8lJWKC0pvyaXjUrJ5cXF59oIHpRv2V9aIr4LGUQBwXgbO82k49lnxW8N3j1qvzt4DLSah5TA5CA1oL+xMZ5CGCKnk6wvxyXftRqv1flf+4YB//+bd63exB73+xZJk7I347/ciXfrO9SC8//HKC0PPvf95SPsPXhX1NwGJt7vvxI99z5MIiX+8HocxYOTH9byhmHVsCOJv5K9tr/dv37FjGHWcsMdH+fqNfNPOZN7y2yvP/iG/4W8Zu5SFh/8fAAD//wMAUEsDBBQABgAIAAAAIQC29GeY0gYAAMkgAAAVAAAAd29yZC90aGVtZS90aGVtZTEueG1s7FlLixtHEL4H8h+Guct6zehhrDXSSPJr1zbetYOPvVJrpq2eadHd2rUwhmCfcgkEnJBDDLnlEEIMMcTkkh9jsEmcH5HqHkkzLfXEj12DCbuCVT++qv66qrq6NHPh4v2YOkeYC8KSjls9V3EdnIzYmCRhx719MCy1XEdIlIwRZQnuuAss3Is7n392AZ2XEY6xA/KJOI86biTl7Hy5LEYwjMQ5NsMJzE0Yj5GELg/LY46OQW9My7VKpVGOEUlcJ0ExqL0xmZARdg6USndnpXxA4V8ihRoYUb6vVGNDQmPH06r6EgsRUO4cIdpxYZ0xOz7A96XrUCQkTHTciv5zyzsXymshKgtkc3JD/beUWwqMpzUtx8PDtaDn+V6ju9avAVRu4wbNQWPQWOvTADQawU5TLqbOZi3wltgcKG1adPeb/XrVwOf017fwXV99DLwGpU1vCz8cBpkNc6C06W/h/V671zf1a1DabGzhm5Vu32saeA2KKEmmW+iK36gHq92uIRNGL1vhbd8bNmtLeIYq56IrlU9kUazF6B7jQwBo5yJJEkcuZniCRoALECWHnDi7JIwg8GYoYQKGK7XKsFKH/+rj6Zb2KDqPUU46HRqJrSHFxxEjTmay414FrW4O8urFi5ePnr989PvLx49fPvp1ufa23GWUhHm5Nz9988/TL52/f/vxzZNv7XiRx7/+5avXf/z5X+qlQeu7Z6+fP3v1/dd//fzEAu9ydJiHH5AYC+c6PnZusRg2aFkAH/L3kziIEMlLdJNQoAQpGQt6ICMDfX2BKLLgeti04x0O6cIGvDS/ZxDej/hcEgvwWhQbwD3GaI9x656uqbXyVpgnoX1xPs/jbiF0ZFs72PDyYD6DuCc2lUGEDZo3KbgchTjB0lFzbIqxRewuIYZd98iIM8Em0rlLnB4iVpMckEMjmjKhyyQGvyxsBMHfhm327jg9Rm3q+/jIRMLZQNSmElPDjJfQXKLYyhjFNI/cRTKykdxf8JFhcCHB0yGmzBmMsRA2mRt8YdC9BmnG7vY9uohNJJdkakPuIsbyyD6bBhGKZ1bOJIny2CtiCiGKnJtMWkkw84SoPvgBJYXuvkOw4e63n+3bkIbsAaJm5tx2JDAzz+OCThC2Ke/y2EixXU6s0dGbh0Zo72JM0TEaY+zcvmLDs5lh84z01QiyymVss81VZMaq6idYQK2kihuLY4kwQnYfh6yAz95iI/EsUBIjXqT5+tQMmQFcdbE1XuloaqRSwtWhtZO4IWJjf4Vab0bICCvVF/Z4XXDDf+9yxkDm3gfI4PeWgcT+zrY5QNRYIAuYAwRVhi3dgojh/kxEHSctNrfKTcxDm7mhvFH0xCR5awW0Ufv4H6/2gQrj1Q9PLdjTqXfswJNUOkXJZLO+KcJtVjUB42Py6Rc1fTRPbmK4RyzQs5rmrKb539c0Ref5rJI5q2TOKhm7yEeoZLLiRT8CWj3o0Vriwqc+E0LpvlxQvCt02SPg7I+HMKg7Wmj9kGkWQXO5nIELOdJthzP5BZHRfoRmsExVrxCKpepQODMmoHDSw1bdaoLO4z02Tker1dVzTRBAMhuHwms1DmWaTEcbzewB3lq97oX6QeuKgJJ9HxK5xUwSdQuJ5mrwLST0zk6FRdvCoqXUF7LQX0uvwOXkIPVI3PdSRhBuENJj5adUfuXdU/d0kTHNbdcs22srrqfjaYNELtxMErkwjODy2Bw+ZV+3M5ca9JQptmk0Wx/D1yqJbOQGmpg95xjOXN0HNSM067gT+MkEzXgG+oTKVIiGSccdyaWhPySzzLiQfSSiFKan0v3HRGLuUBJDrOfdQJOMW7XWVHv8RMm1K5+e5fRX3sl4MsEjWTCSdWEuVWKdPSFYddgcSO9H42PnkM75LQSG8ptVZcAxEXJtzTHhueDOrLiRrpZH0Xjfkh1RRGcRWt4o+WSewnV7TSe3D810c1dmf7mZw1A56cS37tuF1EQuaRZcIOrWtOePj3fJ51hled9glabuzVzXXuW6olvi5BdCjlq2mEFNMbZQy0ZNaqdYEOSWW4dm0R1x2rfBZtSqC2JVV+re1ottdngPIr8P1eqcSqGpwq8WjoLVK8k0E+jRVXa5L505Jx33QcXvekHND0qVlj8oeXWvUmr53Xqp6/v16sCvVvq92kMwioziqp+uPYQf+3SxfG+vx7fe3cerUvvciMVlpuvgshbW7+6rteJ39w4Byzxo1IbtervXKLXr3WHJ6/dapXbQ6JX6jaDZH/YDv9UePnSdIw32uvXAawxapUY1CEpeo6Lot9qlplerdb1mtzXwug+Xtoadr75X5tW8dv4FAAD//wMAUEsDBBQABgAIAAAAIQCenqa+JQQAAJgLAAARAAAAd29yZC9zZXR0aW5ncy54bWy0Vttu2zgQfV9g/8HQ8zq6RJYToU5hW/YmRdwu6hT7TEmUTYQUCZKy4y7233dIiZGTuEWyRV4Sas7MmeFwLv7w8YHRwQ5LRXg98cKzwBvguuAlqTcT79vdcnjhDZRGdYkor/HEO2Dlfbz6/bcP+1RhrUFNDYCiVikrJt5Wa5H6viq2mCF1xgWuAay4ZEjDp9z4DMn7RgwLzgTSJCeU6IMfBUHidTR84jWyTjuKISOF5IpX2pikvKpIgbt/zkK+xm9rkvGiYbjW1qMvMYUYeK22RCjHxv4vG4BbR7L72SV2jDq9fRi84rp7LstHi9eEZwyE5AVWCh6IURcgqXvH8QuiR99n4Lu7oqUC8zCwp+PIR28jiF4QJAUp38aRdBw+WB7xKPw2mpGjUQeGHxyRoq9JbQvdklwi2RZul1dWpDebmkuUUwgH8juAFA1sdOavifgKmuY752ywTwWWBVQOdFwUeL4B4L14tdZIg3qqBKbUtmBBMQL2fbqRiEHzOIm1KXGFGqrvUL7WXIDSDsElxo6y2CKJCo3lWqAC2Oa81pJTp1fyz1zPoREl1ElnYduyP63bFgeLGjG41pO2XfESm8gaSV6ff2NgvYejY5fPHXEYSZKU+M6kc60PFC8h+DX5jqd1+alRmgCjbd5fiOBnAeDaeP4CBXB3EHiJkW4gTe/kzL7EkhKxIlJyeVOXUBvv5oxUFZbggECtraB8iOR7m+drjErYBO/kt1H4b1CG/ju/g7K8n3GtObs+iC3k+tde0ta7f1y+sM9K5Q5fOdePqkGWJbOkKz6D9kgwDaPl5SkkvhxFcddVz5DFeZCdtLkMk/AiOoVMF2E2jk8hs3EwnyankHmYLBcno/7xfSC0OLZ+/MeMsNTsqb+kO5m2GrDWYo5YLgkarMwm841GLu9npHZ4jmES4mNk3eQOHA5bQDFE6RIe2AE2bSwtiRIZruyZrpDc9LydhjwphRn36ZHLzEws/5S8ES26l0i07eJUwrh9KJaSWt8S5uSqydfOqobZfQQ1dfllJ22e+vTsUw3lZ8fOLbJlbHVxPbz53JU5lWtToniFhGgrPd+EE4+SzVaHpjg1fJXwg8d+5JuowyKLRS1mP1Bhbgba3aGXRU52pHfuZOe9LHayuJeNnGzUyxInS4xsC7NNwqK5h6ZzRyOvOKV8j8vrHn8hapOgtkjgrN1DUF68FXSLSQ12KX6ALYdLouF3pCAlQw/wRkFki7zTpujAG/1E12BGWTxlKJFG3ZjxnxjbEn8Wi9mPBYFyXB9Y3q+9szZwShSMKAEbUnPpsD8sFsZpyYsb6CQ4WXm0mEbTi3DawiO7WbWdYvDuX3E1QwqXHeZMR63pP1mwmGbn8Xw4vshmwzgbB8PLaH4xhFETJONkEc8uo3+7JnU/qa/+AwAA//8DAFBLAwQUAAYACAAAACEACKI3GO4BAACXBgAAEgAAAHdvcmQvZm9udFRhYmxlLnhtbOSS0WrbMBSG7wd7B6H7xrLjJG2oU1jXwGDsYnQPoMhyLGZJRkeJk7ffkeykgzQQX3Q3s0HI/zn6JP3+H58OuiF76UBZU9B0wiiRRthSmW1Bf72u7+4pAc9NyRtrZEGPEujT6vOnx25ZWeOB4HoDSy0KWnvfLpMERC01h4ltpcFiZZ3mHj/dNtHc/d61d8Lqlnu1UY3yxyRjbE4HjLuFYqtKCfnVip2Wxsf1iZMNEq2BWrVwonW30DrrytZZIQHwzrrpeZorc8ak+QVIK+Es2MpP8DLDiSIKl6csznTzBpiNA2QXgLlQ5TjGfGAkuPIvDshxmNkJA0ctD5Rosfy2NdbxTYMktIbg7UgEhzFsthqyQbql4Rq7nnmjNk7FQsuNBZlibc+bgrKMrdkMx/DmbBpGmoRGUXMHMkD6RtbLFdeqOZ5U6BRAX2iVF/VJ33Onwgn7EqgtFnawYQV9yRnLXtZr2ispng5/eJYvvgxKFvaKz8OgTM8KC4qInPiZ9hwROece3DPpHbhw4lVpCeSH7MhPq7m54kjG5ujEDP0IzkxHOeIid5Qj7MIRVBb3s3/iyJAN8l1ta381ISEX/0dCnu3OKelCRq64sUAPHqIbIR35KDe0LaV7Lx6VOsjy9mzk0w/xYpjA6g8AAAD//wMAUEsDBBQABgAIAAAAIQBf8zNJGwIAAM0TAAAUAAAAd29yZC93ZWJTZXR0aW5ncy54bWzsmN1umzAUgO8n7R0Q9w1gYxOiJpWiqtOkaZrW7gEc4yTWbB9kO6Xp08+QpEmXXZSrccFNOBxzPs7JZ+WH27sXraJnYZ0EM4+zSRpHwnCopNnM419PDzfTOHKemYopMGIe74WL7xafP902s0asHoX34UoXBYpxM83n8db7epYkjm+FZm4CtTBhcQ1WMx9O7SbRzP7e1TccdM28XEkl/T5BaUrjI8Z+hALrteTiHvhOC+O7+sQKFYhg3FbW7kRrPkJrwFa1BS6cC/NodeBpJs0bJsuvQFpyCw7WfhKGOXbUoUJ5lnaRVmcA6QdAVwDKZdWPQY+MJFRecJzohyEnjNtr8RJHms++bgxYtlKBFN6aKEwXdeD2tb3ZIuyQSj674zFqZm3vWZYRisqcdOsrqPb33dozU2ExTtps2B/fxNqfsulb9qfcbP+RfoL6OrkE70H/lQ99LCvbRv5cY8K+jsOJe22va4OacXGMOSgI25HtPBwQ6qKzfpWrdx31q7WXk/cpTc5DH8L3OjAhCKcpKUYdQ9CRI1oWGNHpqGMIOrKUZilBZYlGH4PwgTDBWZGnePQxCB+Y0vBphdPx62MYPvKiIGVZlPnoYxA+CkQoJtOCjj4G4WNKC4IoHX0MxEeJC1yWJR3/DQ7CB8owQtO8oOPvq//m43DsnppA7aWWr+IB7NJC44Tt7saUgubH9y+H+ouHcIs/AAAA//8DAFBLAwQUAAYACAAAACEA8Pz0teEBAADgAwAAEAAIAWRvY1Byb3BzL2FwcC54bWwgogQBKKAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACcU8Fu2zAMvQ/YPxi6N7LTNc0CRcWQYuhhWwPEbc+qTCfCZEmQVKPZ14+yG0/ZdqpPj4/00xNJsZvXThc9+KCsWZNqVpICjLSNMvs1eai/XixJEaIwjdDWwJocIZAb/vED23rrwEcFoUAJE9bkEKNbURrkAToRZpg2mGmt70TE0O+pbVsl4dbKlw5MpPOyXFB4jWAaaC7cJEhGxVUf3yvaWJn8hcf66FCPsxo6p0UE/iP9qRmdCFbbKHStOuCLBfJTxLZiD4FXl4yOiD1Z3yCxXM4ZHTHbHIQXMmL/eFVeX5aMZgz74pxWUkTsLf+upLfBtrG4HwwXSYHRvIThJXYgX7yKR45Seci+KYMelp8ZHRHa82LvhTsEPr9KHqeQ7aTQsMEG8FboAIz+IdgdiDTcrVDJYR9XPchofRHULxzvnBTPIkBq25r0withIhnLxmDA2oXoea2iRu0pHmBelmP1iVdDAYLzwiEYPCA+dzecEO5bvFv8j9kqNzt4GK1mdnJnpzP+Ut3YzgmDHaYTwg7/DA+utrdpQ956eE5mk39S8bBzQqZlmV8tr/MdyHJshyw0ONRpKhPB7vAOXqcT8F+zh+ZU828ibdXj+GB5tZiV+A1rdOJwFaaXxH8DAAD//wMAUEsDBBQABgAIAAAAIQCVbbkxeAEAAPECAAARAAgBZG9jUHJvcHMvY29yZS54bWwgogQBKKAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACMklFPwjAUhd9N/A9L30e3YQgsYwQ1RBSMCRiNb7W9QGXrmrYw+Pd2GxtOefDt3p7vnt2dNhod0sTZg9I8E0PkdzzkgKAZ42I9RK/LidtHjjZEMJJkAoboCBqN4uuriMqQZgpeVCZBGQ7asU5Ch1QO0cYYGWKs6QZSojuWEFZcZSolxrZqjSWhW7IGHHheD6dgCCOG4MLQlY0jOlky2ljKnUpKA0YxJJCCMBr7HR+fWQMq1RcHSuUHmXJzlHARrcWGPmjegHmed/Juidr9ffw+ny3KX3W5KLKigOKI0dBwk0Ac4XNpK737/AJqquOmsTVVQEym4tn4afEwXY6dx/H0uaRqpch8C8c8U0zb+VZnMQaaKi6NvcnKvXVg6YRoM7dXu+LAbo+/P/QXKGYU7HnxNmK/JJo2OgVdLQfMsQGFVZy18ta9u19OUBx4Qc/1btxgsPT7oe+FnvdR7NeaPxumpwX+6TgIg6DtWBtUEbUfafwNAAD//wMAUEsDBBQABgAIAAAAIQCSR6xTLQ0AANB8AAAPAAAAd29yZC9zdHlsZXMueG1s3J1Lc9s4EsfvW7XfgaXT7iGx5YecpMYzZTvx2jW244mczRkiIQtjktCSlB/76RcAQYlUExQb7MlhL4lFsn8E0f1voPn85bfXJA6eeZYLmZ6Oxu/3RwFPQxmJ9PF09P3h8t2HUZAXLI1YLFN+Onrj+ei3X//+t19ePuXFW8zzQAHS/FMSno4WRbH8tLeXhwuesPy9XPJUrZzLLGGF+pk97iUse1ot34UyWbJCzEQsire9g/39ychisj4UOZ+LkH+W4SrhaWHs9zIeK6JM84VY5hXtpQ/tRWbRMpMhz3N10Elc8hIm0jVmfARAiQgzmct58V4djG2RQSnz8b75K4k3gGMc4AAAJqGIcIyJZewpyxon5zjMcYXJ3xL+OgqS8NP1YyozNosVSXVNoI4uMGD9r97Zryo4Ihl+5nO2iotc/8zuM/vT/jL/Xcq0yIOXTywPhXhQjVHERCj41Vmai5Faw1lenOWCta5c6D9a14R5UVt8LiIx2tN7zP+rVj6z+HR0cFAtudAtaCyLWfpYLePpu+u7ekvMou9TvWimuKcjlr2bnmnDPXtg5f+1w11u/zI7XrJQmP2wecFV3I8n+xoaCy2zg+OP1Y9vK93RbFVIuxMDKP9fY/dAjys5KHFMS42qtXx+I8MnHk0LteJ0ZPalFn6/vs+EzJQOT0cfzT7VwilPxJWIIp7WNkwXIuI/Fjz9nvNos/yPS6MluyCUq1T9fXhybKIgzqMvryFfamWqtSnTPrnTBrHeeiU2Ozfm/6lgY+uJNvsFZzo9BeNthGk+CnGgLfLa0bYzV1vHbrZC7eiwfUeDuUc/6wCOf9aOJj9rRyc/a0cfftaODOav3JFII/5a6q5HLO/iOMSH5vTV1i6OQ0tojkMqaI5DCWiOI9DRHEccozmOMEVwChm6orAW7IeOaO/m7h4S/LiOKB3M3T0C+HF3J3w/7u787sfdnc79uLuztx93d7LGc8uZVXCtZJYWg1U2l7JIZcGDgr8Op7FUsUyJRsPTgx7PSA6SAFNmNjsQD6aFzPzeHSFGpP7jeaGLuEDOg7l4XGWqsh/acJ4+81jV2AGLIsUjBGa8WGWOHvGJ6YzPecbTkFMGNh1UF35BukpmBLG5ZI9kLJ5GxN1XEUmSwjqgVbm80CIRBEGdsDCTw5smGVl+uBH58L7SkOB8FceciHVHE2KGNbw2MJjhpYHBDK8MDGZ4YVDzGVUXWRpRT1kaUYdZGlG/lfFJ1W+WRtRvlkbUb5Y2vN8eRBGbFF+fdYz7n6q7iKU+qT64HVPxmDI1ARg+3NhTpME9y9hjxpaLQJ+EbsfWjxm7n3MZvQUPFGPamkQ1rzchcqGOWqSr4R3aoFGJa80jkteaRySwNW+4xG7VNFlP0K5o6pnpala0itaQeol2yuJVOaEdrjZWDI+wjQAuRZaTyaAdSxDBd3o6q91Jkfk2rRzesA1ruKy2sxJp8yySoJWxDJ9o0vDV25Jnqix7Gky6lHEsX3hER5wWmSxjrS75A+OSXpL/kiwXLBemVmog+g/11eX44JYtBx/QfcxESuO3L+8SJuKAbgZx9XB7EzzIpS4zdcfQAM9lUciEjGnPBP7jB5/9k6aBZ6oITt+IjvaM6PSQgV0IgkGmJMmIiKSmmSIVJGOo4f3O32aSZREN7T7j5R0wBSciTlmyLCcdBNpSefFF5R+C2ZDh/ZtlQp8XohLVAwmsdtowX83+5OHwVHcnA5IzQ19XhTn/aKa6xpoON3ya0MANnyIYb6rhQccvwcE2cMMPtoGjOtiLmOW5cF5C9eZRHW7Foz7e4cWf5clYZvNVTNeBFZCsBysgWRfKeJWkOeURGx7hARse9fEShozhEZySM7x/ZSIic4aBUXnCwKjcYGBUPjAwUgcMv0OnBht+m04NNvxenRJGNAWowajijHT4J7rKU4NRxZmBUcWZgVHFmYFRxdnh54DP52oSTDfE1JBUMVdD0g00acGTpcxY9kaE/BLzR0ZwgrSk3Wdyrh+NkGl5zzYBUp+jjgkn2yWOysk/+IysaZpF2S6CM6IsjqUkOre2GXCMZfPetV1m5sGNwU24j1nIFzKOeOY4Jretqpen5VMY2803zeh12vNGPC6KYLpYn+2vYyb7Oy2rgr1htnuHbX0+qR5faTO75ZFYJVVD4bMTk8P+xiaiG8ZHu403M4mG5XFPS7jPyW7LzSy5YXnS0xLu80NPS6PThmWXHj6z7Kk1EE664mdd4zmC76QritbGrbvtCqS1ZVsInnRFUUMqwVkY6qsF0Dv9NOO27ycetz1GRW4KRk5uSm9duRFdAvvGn4Ue2TFJ0+xvffcEyPtmEt0rc/6xkuV5+8YFp/7PcF2riVOa86CVc9j/wlUjy7j7sXe6cSN65x03oncCciN6ZSKnOSoluSm9c5Mb0TtJuRHobAVHBFy2gva4bAXtfbIVpPhkqwGzADei93TAjUALFSLQQh0wU3AjUEIF5l5ChRS0UCECLVSIQAsVTsBwQoX2OKFCex+hQoqPUCEFLVSIQAsVItBChQi0UCECLVTPub3T3EuokIIWKkSghQoRaKGa+eIAoUJ7nFChvY9QIcVHqJCCFipEoIUKEWihQgRaqBCBFipEoIQKzL2ECilooUIEWqgQgRZq+aihv1ChPU6o0N5HqJDiI1RIQQsVItBChQi0UCECLVSIQAsVIlBCBeZeQoUUtFAhAi1UiEAL1VwsHCBUaI8TKrT3ESqk+AgVUtBChQi0UCECLVSIQAsVItBChQiUUIG5l1AhBS1UiEALFSK64tNeonTdZj/Gn/V03rHf/9KVbdS3+qPcddRhf1TVKjer/7MI51I+Ba0PHh6aeqMfRMxiIc0pasdl9TrX3BKBuvD59aL7CZ86feBLl+yzEOaaKYAf9bUE51SOukK+bgmKvKOuSK9bglnnUVf2rVuCYfCoK+kaXVY3pajhCBh3pZma8dhh3pWta+awi7tydM0Q9nBXZq4Zwg7uysc1w+NAJ+dt6+Oe/TRZ318KCF3hWCOcuAldYQl9VaVjKIy+TnMT+nrPTejrRjcB5U8nBu9YNwrtYTfKz9VQZlhX+wvVTcC6GhK8XA0w/q6GKG9XQ5Sfq2FixLoaErCu9k/OboKXqwHG39UQ5e1qiPJzNRzKsK6GBKyrIQHr6oEDshPj72qI8nY1RPm5Gk7usK6GBKyrIQHrakjwcjXA+LsaorxdDVF+rgZVMtrVkIB1NSRgXQ0JXq4GGH9XQ5S3qyGqy9XmLErD1SgP18xxk7CaIW5ArhniknPN0KNaqll7Vks1gme1BH1V+RxXLdWd5ib09Z6b0NeNbgLKn04M3rFuFNrDbpSfq3HVUpur/YXqJmBdjauWnK7GVUudrsZVS52uxlVLblfjqqU2V+OqpTZX+ydnN8HL1bhqqdPVuGqp09W4asntaly11OZqXLXU5mpctdTm6oEDshPj72pctdTpaly15HY1rlpqczWuWmpzNa5aanM1rlpyuhpXLXW6GlctdboaVy25XY2rltpcjauW2lyNq5baXI2rlpyuxlVLna7GVUudrsZVS7fKRBC8AmqasKwI6N4Xd8XyRcGGv5zwe5rxXMbPPArQh7r30vhEld6H+aCc2r5QB6pfW157xigqX9tqgWbD62j9KSltrFsU2I922cWm4fYaq/k7y1UhbLfZ3//8eXJe3cwBPso102/IUq0Y75snicqfZ6tC2k1sS6qvdZm4cH+ty/HJs9PRBYvFLGt86ux09CASngd3/CX4JhNm+tR86qyxeZjDDUtPlV8va3yv7PrOtqb6QJnpwR19vu5le6V7DPp58yUus+cZU+79qsMDeCHVr3VsWa7DuVpe7eZiwbJy7UZo1TY2laCc+sT58k7t3yzTP26Un3LzC/r74Mj4236TzaYcWb5y6uY5Xu+oh3erL9OxPzs+aKdXfrHL1o5utdx8004vPl9/0y7UKapq18Hl8dFHE4xmY5O+VDia5GUC1izWd9Qo0PllSdh8Fe+w5at45bKBsXPojB17M0FH7LTEyGFnjPgECfwcXyl888up+zJYoO7bQqbqxu6E4NZ+q9hn5b8XNpw3nze0437j84Zm2W5HhqpvWWhfv+dIvPY12uvnQM1LtLdd7HjXtsNtNolsRo9yu8bYUbbf0e5Cj9kdbTZjeueIUQ77u+JqVwtVe2Zx6V31x3WqA+/FfuCwbGn0ykqUWn/B4/iWlVvLpXvTmM91Bn3RkWneurK1fla+QNRpn5mZphOw12xM+bM7TspPithboJwDtJ5OtXS3uR9vaE/3jOFwlauuMfOM7fY18sl2K+1KNTnepJutPNWqA2fW2nW87izVP1v0mUa0rHFOJ/AZZtgUpK/nxuUXRuv+GtvO6u0jdH/X5l/tM7L6BkJ/CdXqAvYlYU9MYE/YwvEv7Am5ygTPdLT0jbotE9NdzUUtXVYLODsZawRcNQ8j6srGFNSVDsZE6cAOeM5JLtIn/1fTTVwOqf7Kf/0fAAAA//8DAFBLAQItABQABgAIAAAAIQDfpNJsWgEAACAFAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAi0AFAAGAAgAAAAhAB6RGrfvAAAATgIAAAsAAAAAAAAAAAAAAAAAkwMAAF9yZWxzLy5yZWxzUEsBAi0AFAAGAAgAAAAhANZks1H0AAAAMQMAABwAAAAAAAAAAAAAAAAAswYAAHdvcmQvX3JlbHMvZG9jdW1lbnQueG1sLnJlbHNQSwECLQAUAAYACAAAACEAaFhYfRUwAAAaYwcAEQAAAAAAAAAAAAAAAADpCAAAd29yZC9kb2N1bWVudC54bWxQSwECLQAUAAYACAAAACEAtvRnmNIGAADJIAAAFQAAAAAAAAAAAAAAAAAtOQAAd29yZC90aGVtZS90aGVtZTEueG1sUEsBAi0AFAAGAAgAAAAhAJ6epr4lBAAAmAsAABEAAAAAAAAAAAAAAAAAMkAAAHdvcmQvc2V0dGluZ3MueG1sUEsBAi0AFAAGAAgAAAAhAAiiNxjuAQAAlwYAABIAAAAAAAAAAAAAAAAAhkQAAHdvcmQvZm9udFRhYmxlLnhtbFBLAQItABQABgAIAAAAIQBf8zNJGwIAAM0TAAAUAAAAAAAAAAAAAAAAAKRGAAB3b3JkL3dlYlNldHRpbmdzLnhtbFBLAQItABQABgAIAAAAIQDw/PS14QEAAOADAAAQAAAAAAAAAAAAAAAAAPFIAABkb2NQcm9wcy9hcHAueG1sUEsBAi0AFAAGAAgAAAAhAJVtuTF4AQAA8QIAABEAAAAAAAAAAAAAAAAACEwAAGRvY1Byb3BzL2NvcmUueG1sUEsBAi0AFAAGAAgAAAAhAJJHrFMtDQAA0HwAAA8AAAAAAAAAAAAAAAAAt04AAHdvcmQvc3R5bGVzLnhtbFBLBQYAAAAACwALAMECAAARXAAAAAA=" download="OS_Codes.docx">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Download Docs
+  </a>
+</div>
+
+<div class="main">
+
+<div class="program-card" id="p1">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program1.c</span>
+    <span class="card-title">Multi-Process Application using fork()</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p1"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main()
+{
+    pid_t pid;
+    pid = fork();
+
+    if (pid &lt; 0)
+    {
+        printf("Process creation failed\n");
+    }
+    else if (pid == 0)
+    {
+        printf("Child Process\n");
+        printf("Child PID: %d\n", getpid());
+    }
+    else
+    {
+        wait(NULL);
+        printf("Parent Process\n");
+        printf("Parent PID: %d\n", getpid());
+    }
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p2">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program2.c</span>
+    <span class="card-title">Multi-Threaded Application using POSIX Threads</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p2"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;stdint.h&gt; // Required for intptr_t
+
+void* thread_function(void* arg)
+{
+    intptr_t id = (intptr_t)arg;
+    printf("Thread %ld is running\n", (long)id);
+    return NULL;
+}
+
+int main()
+{
+    pthread_t threads[3];
+    intptr_t i; // Match the type used in the thread function
+    for (i = 0; i &lt; 3; i++)
+    {
+        pthread_create(&threads[i], NULL, thread_function, (void*)i);
+    }
+    for (i = 0; i &lt; 3; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p3">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program3.c</span>
+    <span class="card-title">Dining Philosophers Problem</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p3"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;semaphore.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdint.h&gt;
+
+sem_t room;
+sem_t chopstick[5];
+
+void eat(int phil) {
+    printf("Philosopher %d is eating\n", phil);
+}
+
+void* philosopher(void* num) {
+    int phil = (int)(intptr_t)num;
+
+    sem_wait(&room);
+    printf("Philosopher %d has entered the room\n", phil);
+
+    sem_wait(&chopstick[phil]);
+    sem_wait(&chopstick[(phil + 1) % 5]);
+
+    eat(phil);
+    sleep(2);
+
+    printf("Philosopher %d has finished eating\n", phil);
+
+    sem_post(&chopstick[(phil + 1) % 5]);
+    sem_post(&chopstick[phil]);
+    sem_post(&room);
+
+    return NULL;
+}
+
+int main() {
+    int i;
+    pthread_t tid[5];
+
+    sem_init(&room, 0, 4);
+
+    for (i = 0; i &lt; 5; i++) {
+        sem_init(&chopstick[i], 0, 1);
+    }
+
+    for (i = 0; i &lt; 5; i++) {
+        pthread_create(&tid[i], NULL, philosopher, (void*)(intptr_t)i);
+    }
+
+    for (i = 0; i &lt; 5; i++) {
+        pthread_join(tid[i], NULL);
+    }
+
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p4">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program4.c</span>
+    <span class="card-title">Banker's Algorithm</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p4"></div>
+    <pre class="code-pre"><code class="language-c">#include&lt;stdio.h&gt;
+
+int main()
+{
+  int Max[10][10], need[10][10], alloc[10][10], avail[10], completed[10], safeSequence[10];
+  int p, r, i, j, process, count;
+  count = 0;
+
+  printf("Enter the Number of Process: ");
+  scanf("%d", &p);
+
+  for(i = 0; i &lt; p; i++)
+  {
+    completed[i] = 0;
+  }
+
+  printf("\nEnter the no of resources: ");
+  scanf("%d", &r);
+
+  printf("\nEnter the Max Matrix for each process : ");
+  for (i = 0; i &lt; p; i++)
+  {
+    printf("\nFor process %d :", i + 1);
+    for(j = 0; j &lt; r; j++)
+      scanf("%d", &Max[i][j]);
+  }
+
+  printf("\nEnter the allocation for Each Process: ");
+  for(i = 0; i &lt; p; i++)
+  {
+    printf("\nFor process %d :", i + 1);
+    for(j = 0; j &lt; r; j++)
+      scanf("%d", &alloc[i][j]);
+  }
+
+  printf("\nEnter the Available Resources: ");
+  for (i = 0; i &lt; r; i++)
+    scanf("%d", &avail[i]);
+
+  for (i = 0; i &lt; p; i++)
+    for(j = 0; j &lt; r; j++)
+      need[i][j] = Max[i][j] - alloc[i][j];
+
+  do
+  {
+    printf("\nMax matrix:\tAllocation matrix:\n");
+    for(i = 0; i &lt; p; i++)
+    {
+      for(j = 0; j &lt; r; j++)
+        printf("%d ", Max[i][j]);
+      printf("\t");
+      for(j = 0; j &lt; r; j++)
+        printf("%d ", alloc[i][j]);
+      printf("\n");
+    }
+
+    process = -1;
+    for(i = 0; i &lt; p; i++)
+    {
+      if(completed[i] == 0)
+      {
+        process = i;
+        for(j = 0; j &lt; r; j++)
+        {
+          if(avail[j] &lt; need[i][j])
+          {
+            process = -1;
+            break;
+          }
+        }
+      }
+
+      if(process != -1)
+      {
+        printf("\nProcess %d runs to completion !", process + 1);
+        safeSequence[count] = process + 1;
+        count++;
+        for(j = 0; j &lt; r; j++)
+        {
+          avail[j] += alloc[process][j];
+          alloc[process][j] = 0;
+          Max[process][j] = 0;
+          completed[process] = -1;
+        }
+        break;
+      }
+    }
+  } while(count != p && process != -1);
+
+  if(count == p)
+  {
+    printf("\nThe system is in a safe state!!\n");
+    printf("Safe Sequence: &lt; ");
+    for(i = 0; i &lt; p; i++)
+      printf("%d ", safeSequence[i]);
+    printf("&gt;\n");
+  }
+  else
+  {
+    printf("\nThe system is in an unsafe state!!");
+  }
+  return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p5">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program5.c</span>
+    <span class="card-title">FIFO Page Replacement</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p5"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+
+int main() {
+    int frames, pages, page_faults = 0;
+    printf("Enter number of frames: ");
+    scanf("%d", &frames);
+    printf("Enter number of pages: ");
+    scanf("%d", &pages);
+
+    int page_string[pages], queue[frames], front = 0, count = 0;
+
+    printf("Enter the reference string: ");
+    for (int i = 0; i &lt; pages; i++)
+        scanf("%d", &page_string[i]);
+
+    for (int i = 0; i &lt; pages; i++) {
+        int found = 0;
+        for (int j = 0; j &lt; count; j++) {
+            if (queue[j] == page_string[i]) {
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            if (count &lt; frames)
+                queue[count++] = page_string[i];
+            else {
+                queue[front] = page_string[i];
+                front = (front + 1) % frames;
+            }
+            page_faults++;
+        }
+
+        printf("\nFrames: ");
+        for (int k = 0; k &lt; count; k++)
+            printf("%d ", queue[k]);
+    }
+
+    printf("\nTotal Page Faults: %d\n", page_faults);
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p6">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program6.c</span>
+    <span class="card-title">LRU Page Replacement</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p6"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+
+int findLRU(int time[], int n) {
+    int min = time[0], pos = 0;
+    for (int i = 1; i &lt; n; i++) {
+        if (time[i] &lt; min) {
+            min = time[i];
+            pos = i;
+        }
+    }
+    return pos;
+}
+
+int main() {
+    int frames, pages, page_faults = 0;
+
+    printf("Enter number of frames: ");
+    scanf("%d", &frames);
+
+    printf("Enter number of pages: ");
+    scanf("%d", &pages);
+
+    int page_string[pages], queue[frames], time[frames], counter = 0;
+
+    printf("Enter the reference string: ");
+    for (int i = 0; i &lt; pages; i++)
+        scanf("%d", &page_string[i]);
+
+    for (int i = 0; i &lt; frames; i++) {
+        queue[i] = -1;
+        time[i] = -1;
+    }
+
+    for (int i = 0; i &lt; pages; i++) {
+        int found = 0;
+
+        for (int j = 0; j &lt; frames; j++) {
+            if (queue[j] == page_string[i]) {
+                found = 1;
+                time[j] = counter++;
+                break;
+            }
+        }
+
+        if (!found) {
+            int pos = -1;
+
+            for (int j = 0; j &lt; frames; j++) {
+                if (queue[j] == -1) {
+                    pos = j;
+                    break;
+                }
+            }
+
+            if (pos == -1)
+                pos = findLRU(time, frames);
+
+            queue[pos] = page_string[i];
+            time[pos] = counter++;
+            page_faults++;
+        }
+
+        printf("\nFrames: ");
+        for (int k = 0; k &lt; frames; k++)
+            printf("%d ", queue[k]);
+    }
+
+    printf("\nTotal Page Faults: %d\n", page_faults);
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p7">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program7.c</span>
+    <span class="card-title">First Fit Memory Allocation</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p7"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+
+int main() {
+    int nB, nP;
+
+    printf("Enter number of memory blocks: ");
+    scanf("%d", &nB);
+    int block[nB];
+    printf("Enter sizes of memory blocks:\n");
+    for (int i = 0; i &lt; nB; i++) scanf("%d", &block[i]);
+
+    printf("Enter number of processes: ");
+    scanf("%d", &nP);
+    int proc[nP];
+    printf("Enter sizes of processes:\n");
+    for (int i = 0; i &lt; nP; i++) scanf("%d", &proc[i]);
+
+    int alloc[nP], frag[nP];
+    for (int i = 0; i &lt; nP; i++) { alloc[i] = -1; frag[i] = 0; }
+
+    // FIRST FIT
+    for (int i = 0; i &lt; nP; i++) {
+        for (int j = 0; j &lt; nB; j++) {
+            if (block[j] &gt;= proc[i]) {
+                alloc[i] = j;
+                frag[i] = block[j] - proc[i];
+                block[j] -= proc[i];
+                break;
+            }
+        }
+    }
+
+    printf("\n----- FIRST FIT ALLOCATION -----\n");
+    printf("Process\tSize\tBlock\tFragment\n");
+    for (int i = 0; i &lt; nP; i++) {
+        printf("P%d\t%d\t", i + 1, proc[i]);
+        if (alloc[i] == -1) printf("NA\t-\n");
+        else printf("%d\t%d\n", alloc[i] + 1, frag[i]);
+    }
+
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p8">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program8.c</span>
+    <span class="card-title">Best Fit Memory Allocation</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p8"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+
+#define INF 1000000000
+
+int main() {
+    int nB, nP;
+
+    printf("Enter number of memory blocks: ");
+    scanf("%d", &nB);
+    int block[nB];
+    printf("Enter sizes of memory blocks:\n");
+    for (int i = 0; i &lt; nB; i++) scanf("%d", &block[i]);
+
+    printf("Enter number of processes: ");
+    scanf("%d", &nP);
+    int proc[nP];
+    printf("Enter sizes of processes:\n");
+    for (int i = 0; i &lt; nP; i++) scanf("%d", &proc[i]);
+
+    int alloc[nP], frag[nP];
+    for (int i = 0; i &lt; nP; i++) { alloc[i] = -1; frag[i] = 0; }
+
+    // BEST FIT
+    for (int i = 0; i &lt; nP; i++) {
+        int bestIdx = -1;
+        int bestSize = INF;
+
+        for (int j = 0; j &lt; nB; j++) {
+            if (block[j] &gt;= proc[i] && block[j] &lt; bestSize) {
+                bestSize = block[j];
+                bestIdx = j;
+            }
+        }
+
+        if (bestIdx != -1) {
+            alloc[i] = bestIdx;
+            frag[i] = block[bestIdx] - proc[i];
+            block[bestIdx] -= proc[i];
+        }
+    }
+
+    printf("\n----- BEST FIT ALLOCATION -----\n");
+    printf("Process\tSize\tBlock\tFragment\n");
+    for (int i = 0; i &lt; nP; i++) {
+        printf("P%d\t%d\t", i + 1, proc[i]);
+        if (alloc[i] == -1) printf("NA\t-\n");
+        else printf("%d\t%d\n", alloc[i] + 1, frag[i]);
+    }
+
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p9">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program9.c</span>
+    <span class="card-title">Worst Fit Memory Allocation</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p9"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+
+int main() {
+    int nB, nP;
+
+    printf("Enter number of memory blocks: ");
+    scanf("%d", &nB);
+    int block[nB];
+    printf("Enter sizes of memory blocks:\n");
+    for (int i = 0; i &lt; nB; i++) scanf("%d", &block[i]);
+
+    printf("Enter number of processes: ");
+    scanf("%d", &nP);
+    int proc[nP];
+    printf("Enter sizes of processes:\n");
+    for (int i = 0; i &lt; nP; i++) scanf("%d", &proc[i]);
+
+    int alloc[nP], frag[nP];
+    for (int i = 0; i &lt; nP; i++) { alloc[i] = -1; frag[i] = 0; }
+
+    // WORST FIT
+    for (int i = 0; i &lt; nP; i++) {
+        int worstIdx = -1;
+        int worstSize = -1;
+
+        for (int j = 0; j &lt; nB; j++) {
+            if (block[j] &gt;= proc[i] && block[j] &gt; worstSize) {
+                worstSize = block[j];
+                worstIdx = j;
+            }
+        }
+
+        if (worstIdx != -1) {
+            alloc[i] = worstIdx;
+            frag[i] = block[worstIdx] - proc[i];
+            block[worstIdx] -= proc[i];
+        }
+    }
+
+    printf("\n----- WORST FIT ALLOCATION -----\n");
+    printf("Process\tSize\tBlock\tFragment\n");
+    for (int i = 0; i &lt; nP; i++) {
+        printf("P%d\t%d\t", i + 1, proc[i]);
+        if (alloc[i] == -1) printf("NA\t-\n");
+        else printf("%d\t%d\n", alloc[i] + 1, frag[i]);
+    }
+
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p10">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program10.c</span>
+    <span class="card-title">FCFS Disk Scheduling</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p10"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main() {
+    int n, i;
+    int request[50];
+    int head;
+    int total_seek = 0;
+
+    printf("Enter number of requests: ");
+    scanf("%d", &n);
+
+    printf("Enter initial head position: ");
+    scanf("%d", &head);
+
+    printf("Enter the request sequence:\n");
+    for(i = 0; i &lt; n; i++) {
+        scanf("%d", &request[i]);
+    }
+
+    for(i = 0; i &lt; n; i++) {
+        total_seek += abs(head - request[i]);
+        head = request[i];
+    }
+
+    printf("Total Seek Time (FCFS) = %d\n", total_seek);
+
+    return 0;
+}</code></pre>
+  </div>
+</div>
+
+<div class="program-card" id="p11">
+  <div class="card-header">
+    <div class="traffic-lights">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <span class="file-tab active">program11.c</span>
+    <span class="card-title">SSTF Disk Scheduling</span>
+    <button class="copy-btn" onclick="copyCode(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>
+  <div class="editor-body">
+    <div class="line-nums" id="ln-p11"></div>
+    <pre class="code-pre"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;limits.h&gt;
+
+int main() {
+    int n, i, count = 0;
+    int req[50], visited[50] = {0};
+    int head, total = 0;
+
+    printf("Enter number of requests: ");
+    scanf("%d", &n);
+
+    printf("Enter initial head position: ");
+    scanf("%d", &head);
+
+    printf("Enter request sequence:\n");
+    for (i = 0; i &lt; n; i++) {
+        scanf("%d", &req[i]);
+    }
+
+    while (count &lt; n) {
+        int min = INT_MAX, index = -1;
+        for (i = 0; i &lt; n; i++) {
+            if (visited[i] == 0) {
+                int dist = abs(head - req[i]);
+                if (dist &lt; min) {
+                    min = dist;
+                    index = i;
+                }
+            }
+        }
+
+        if (index == -1) {
+            break;
+        }
+
+        total += min;
+        head = req[index];
+        visited[index] = 1;
+        count++;
+    }
+
+    printf("Total Seek Time (SSTF) = %d\n", total);
+    return 0;
+}</code></pre>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+  hljs.highlightAll();
+
+  // Generate line numbers for each card
+  document.querySelectorAll('.editor-body').forEach(body => {
+    const code = body.querySelector('code');
+    const lnDiv = body.querySelector('.line-nums');
+    if (!code || !lnDiv) return;
+    const lines = code.innerText.split('\n');
+    // remove trailing empty line if present
+    const count = lines[lines.length - 1].trim() === '' ? lines.length - 1 : lines.length;
+    lnDiv.innerHTML = Array.from({length: count}, (_, i) => i + 1).join('<br>');
+  });
+
+  function copyCode(btn) {
+    const code = btn.closest('.program-card').querySelector('code');
+    const text = code.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
